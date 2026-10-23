@@ -1,13 +1,15 @@
 # Bouncing Ball
 
-A small interactive Python project built with Pygame. Set a ball's velocity with a mouse gesture and watch it bounce off the window edges.
+A small interactive Python project built with Pygame. Set a ball's velocity with a mouse gesture and watch it fall under gravity and bounce with decreasing speed.
 
 ## Features
 
 - A ball moves inside a 1600 × 900 window.
 - A left-button mouse gesture sets its direction and speed.
-- The ball reverses its horizontal or vertical velocity when it crosses a window boundary.
-- The selected velocity is printed to the console.
+- Gravity accelerates the ball downward.
+- Wall collisions reverse the corresponding velocity component and retain 85% of its magnitude.
+- A small vertical velocity near the floor triggers a resting state.
+- The selected velocity and per-frame vertical velocity are printed to the console.
 - The frame rate is capped at 240 FPS.
 
 ## Requirements
@@ -33,7 +35,7 @@ Run the script from this folder so it can find `ball.png`. Keep the image alongs
 2. Move the cursor while holding the button.
 3. Release the button inside the window to set the ball's velocity.
 
-The ball moves in the direction from the press position to the release position. A longer gesture produces a higher speed. Clicking directly on the ball is not required, and pressing the button does not stop its current movement.
+The gesture sets the initial velocity in the direction from the press position to the release position; gravity then changes its vertical component. A longer gesture produces a higher initial speed. Clicking directly on the ball is not required, and pressing the button does not stop its current movement. Another gesture can launch the ball again after it settles.
 
 Close the window to exit.
 
@@ -50,7 +52,21 @@ speed = [
 
 Here, `x` is set to `4`. The resulting values represent pixels per frame. Gesture duration is not used in the calculation.
 
-Pygame moves the image's rectangle each frame. If it crosses a horizontal or vertical boundary, the corresponding velocity component changes sign. The background is cleared and the ball is drawn at its new position before the display is updated.
+Before moving the image's rectangle, the program checks whether its next position would cross a window boundary. On a collision, it adjusts the position and multiplies the corresponding velocity component by `-k_bounce`, where `k_bounce = 0.85`.
+
+Gravity adds `0.5` to the vertical velocity each frame when either the ball's bottom is more than 2 pixels above the floor or the absolute vertical velocity exceeds `0.5`:
+
+```python
+if ball.bottom < height - 2 or abs(speed[1]) > 0.5:
+    speed[1] += 0.5
+else:
+    ball.bottom = height
+    speed[1] = 0
+```
+
+Otherwise, the ball is placed exactly on the floor and its vertical velocity is set to zero. This resting rule does not reset horizontal velocity, so the ball may continue moving sideways.
+
+After collision handling and gravity, the ball is moved and drawn against a cleared background, then the display is updated.
 
 ## Project structure
 
@@ -64,8 +80,9 @@ bouncing-ball/
 ## Current limitations
 
 - Window dimensions are fixed.
-- Movement depends on the actual frame rate.
-- Collision handling reverses velocity without moving the ball back inside the window, which can cause problems with large movements near an edge.
+- Movement and gravity depend on the actual frame rate. The rectangle uses integer coordinates, so small fractional movements can be lost.
+- Collision checks use a single `if`/`elif` chain, so only one boundary is handled per frame. Corner collisions and large movements may behave unexpectedly.
+- The floor-resting threshold can also stop a weak upward movement close to the floor.
 - The image path is relative to the current working directory.
 
-This learning project explores mouse events, velocity vectors, rectangle-based collision detection, and a Pygame animation loop.
+This learning project explores mouse events, velocity vectors, gravity, damped bouncing, rectangle-based collision detection, and a Pygame animation loop.
